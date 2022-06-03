@@ -1,6 +1,6 @@
 // @ts-nocheck
 const METADATA = {
-    website: "",
+    website: "https://github.com/nightfire2/shapez-configurable-pins-mod",
     author: "nightfire",
     name: "Configurable Pins",
     version: "1",
