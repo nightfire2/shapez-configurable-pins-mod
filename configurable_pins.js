@@ -10,7 +10,7 @@ const METADATA = {
 
     // You can specify this parameter if savegames will still work
     // after your mod has been uninstalled
-    doesNotAffectSavegame: true,
+    doesNotAffectSavegame: false,
 };
 
 class PinConfigurator extends shapez.BaseHUDPart {
@@ -24,103 +24,94 @@ class PinConfigurator extends shapez.BaseHUDPart {
 
     }
 
-    canRotate(){
-        return this.root.currentLayer === "wires" 
+    canRotate() {
+        return this.root.currentLayer === "wires"
             && !this.root.camera.getIsMapOverlayActive()
             && !this.placementBlueprint.get()
             && !this.placementBuilding.get();
     }
 
-    getBuildingWithPins(tile){
+    getBuildingWithPins(tile) {
         const building = this.root.map.getLayerContentXY(tile.x, tile.y, "regular");
-        if(building && building.components.WiredPins && building.components.WiredPins.slots.length > 0){
+        if (building && building.components.WiredPins && building.components.WiredPins.slots.length > 0) {
             return building;
         }
     }
 
     getWorldPositionPins(building) {
         const rotation = building.components.StaticMapEntity.rotation;
-        return building.components.WiredPins.slots.map(pin=>{
-            const [x,y] = this.rotatePoints(pin.pos.x,pin.pos.y,rotation);
+        return building.components.WiredPins.slots.map(pin => {
+            const [x, y] = this.rotatePoints(pin.pos.x, pin.pos.y, rotation);
             return {
                 x: x,
                 y: y,
-                pin:pin
+                pin: pin
             }
         })
     }
-    getValidPinRotations(building,worldPins,tile,rotateCC){
-        const rotateMultiplier = rotateCC?-1:1;
-        console.log(worldPins);
+    getValidPinRotations(building, worldPins, tile, rotateCC) {
+        const rotateMultiplier = rotateCC ? -1 : 1;
         const origin = building.components.StaticMapEntity.origin;
-        const pinsUnderCursor = worldPins.filter(item=>{
-            return item.x+origin.x == tile.x && item.y+origin.y==tile.y;
+        const pinsUnderCursor = worldPins.filter(item => {
+            return item.x + origin.x == tile.x && item.y + origin.y == tile.y;
         });
-        for(let angle = 90;angle<360;angle+=90){
-            const attemptedRotation = pinsUnderCursor.map(pin=>{
-                const direction = this.rotateDirection(pin.pin.direction,rotateMultiplier*angle);
-                const point = this.getPointInfrontOfPin(pin.pin,direction);
-                console.log(point);
-                console.log(direction);
-                const collision = worldPins.filter(pin=>{
-                    return pin.pin.pos.x == point[0] && pin.pin.pos.y==point[1];
+        for (let angle = 90; angle < 360; angle += 90) {
+            const attemptedRotation = pinsUnderCursor.map(pin => {
+                const direction = this.rotateDirection(pin.pin.direction, rotateMultiplier * angle);
+                const point = this.getPointInfrontOfPin(pin.pin, direction);
+                const collision = worldPins.filter(pin => {
+                    return pin.pin.pos.x == point[0] && pin.pin.pos.y == point[1];
                 }).length > 0
                 return {
-                    pin:pin.pin,
-                    collision:collision,
-                    newDirection:direction
-                }; 
+                    pin: pin.pin,
+                    collision: collision,
+                    newDirection: direction
+                };
             });
-            if(!attemptedRotation.some(attempt=> attempt.collision)){
+            if (!attemptedRotation.some(attempt => attempt.collision)) {
                 return attemptedRotation;
             }
         }
-        
-        console.log(rotateablePins);
-        
+
         return [];
     }
-    rotateDirection(direction,angle){
+    rotateDirection(direction, angle) {
 
-        const rotationOrder = ["top","right","bottom","left"];
+        const rotationOrder = ["top", "right", "bottom", "left"];
         const directionIndex = {
-            "top":0,
-            "right":1,
-            "bottom":2,
-            "left":3
+            "top": 0,
+            "right": 1,
+            "bottom": 2,
+            "left": 3
         }
-        console.log(direction);
-        console.log(angle);
-        return rotationOrder[(directionIndex[direction]+(angle%360)/90)%4];
+        return rotationOrder[(directionIndex[direction] + (angle % 360) / 90) % 4];
     }
-    getPointInfrontOfPin(pin,direction){
-        switch(direction){
+    getPointInfrontOfPin(pin, direction) {
+        switch (direction) {
             case "left":
-                return [pin.pos.x-1,pin.pos.y];
+                return [pin.pos.x - 1, pin.pos.y];
             case "right":
-                return [pin.pos.x+1,pin.pos.y]
+                return [pin.pos.x + 1, pin.pos.y]
             case "top":
-                return [pin.pos.x,pin.pos.y-1]        
+                return [pin.pos.x, pin.pos.y - 1]
             case "bottom":
-                return [pin.pos.x,pin.pos.y+1]
+                return [pin.pos.x, pin.pos.y + 1]
         }
     }
 
-    rotatePoints(x,y,angle){
-        console.log(angle);
-        switch(angle%360){
+    rotatePoints(x, y, angle) {
+        switch (angle % 360) {
             case 90:
-                return [-y,x];
+                return [-y, x];
             case 180:
-                return [-x,-y];
+                return [-x, -y];
             case 270:
-                return [y,-x];
+                return [y, -x];
         }
-        return [x,y];
+        return [x, y];
     }
 
     tryRotate() {
-        //console.log(this);
         if (this.canRotate()) {
 
             const mousePosition = this.root.app.mousePosition;
@@ -132,74 +123,35 @@ class PinConfigurator extends shapez.BaseHUDPart {
             const tile = worldPos.toTileSpace();
 
             const currentBuilding = this.getBuildingWithPins(tile);
-            if(currentBuilding){
-                console.log(currentBuilding);
-                console.log(tile);
-                
+            if (currentBuilding) {
+
                 const pins = this.getWorldPositionPins(currentBuilding);
                 const rotateCC = this.root.keyMapper.getBinding(shapez.KEYMAPPINGS.placement.rotateInverseModifier).pressed;
-                const rotations = this.getValidPinRotations(currentBuilding,pins,tile,rotateCC);
-                console.log(rotations);
-                rotations.forEach(rotation=>rotation.pin.direction = rotation.newDirection);
-            } 
+                const rotations = this.getValidPinRotations(currentBuilding, pins, tile, rotateCC);
+                rotations.forEach(rotation => rotation.pin.direction = rotation.newDirection);
+            }
         }
-    }
-}
-
-function unpackDir(packedDir){
-    switch(packedDir){
-        case "l":
-            return "left";
-        case "r":
-            return "right";
-        case "t":
-            return "top";
-        case "b":
-            return "bottom";
     }
 }
 
 class Mod extends shapez.Mod {
     init() {
-        // Start the modding here
         this.modInterface.registerHudElement("pin_configurator", PinConfigurator);
-        replaceStaticMethod(shapez.WiredPinsComponent,"getSchema",function(getSchema,args) {
-            const schema = getSchema();
-            schema.slots.innerType.descriptor["direction"] = shapez.types.nullable(shapez.types.string);
-            return schema;
-        });
+        this.modInterface.extendObject(shapez.WiredPinsComponent, ({ $super, $old }) => ({
+            getSchema() {
+                const schema = $old.getSchema();
+                schema.slots.innerType.descriptor["direction"] = shapez.types.nullable(shapez.types.string);
+                return schema;
+            }
+        }));
 
-        const WiredPinsExtension = ({$super,$old}) => ({
+        const WiredPinsExtension = ({ $super, $old }) => ({
             copyAdditionalStateTo(otherComponent) {
                 for (let i = 0; i < otherComponent.slots.length; ++i) {
-                    otherComponent.slots[i].direction=this.slots[i].direction;
+                    otherComponent.slots[i].direction = this.slots[i].direction;
                 }
             }
         });
         this.modInterface.extendClass(shapez.WiredPinsComponent, WiredPinsExtension);
-
-        // this.modInterface.replaceMethod(shapez.WiredPinsComponent, "setSlots", function (
-        //     $original,
-        //     [slots]
-        // ) {
-        //     $original(slots);
-        //     for (let i = 0; i < slots.length; ++i) {
-        //         const slotData = slots[i];
-        //         const dir = slotData.dir;
-        //         if(dir!=null) {
-        //             this.slots[i].direction = unpackDir(dir);
-        //         }
-        //     }
-            
-    
-        // });
     }
-}
-
-function replaceStaticMethod(classHandle, methodName, override) {
-    const oldMethod = classHandle[methodName];
-    classHandle[methodName] = function () {
-        //@ts-ignore This is true I just cant tell it that arguments will be Arguments<O>
-        return override.call(this, oldMethod.bind(this), arguments);
-    };
 }
