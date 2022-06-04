@@ -86,7 +86,6 @@ class PinConfigurator extends shapez.BaseHUDPart {
             const tile = worldPos.toTileSpace();
             
             const building = this.getBuildingWithPins(tile);
-            console.log(building);
             if (building) {
                 const localTile = building.components.StaticMapEntity.worldToLocalTile(tile);
                 const tilePins = this.getTilePins(building, localTile);
