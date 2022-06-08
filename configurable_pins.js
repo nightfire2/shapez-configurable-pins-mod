@@ -3,7 +3,7 @@ const METADATA = {
     website: "https://github.com/nightfire2/shapez-configurable-pins-mod",
     author: "nightfire",
     name: "Configurable Pins",
-    version: "0.1.1",
+    version: "0.1.2",
     id: "configurable-pins",
     description: "Allows rotating pins",
     minimumGameVersion: ">=1.5.0",
@@ -55,9 +55,9 @@ class PinConfigurator extends shapez.BaseHUDPart {
         if (tilePins.some(pin => pin.canRotate === false)) {
             return []
         };
-        for (let i = 1; i < 4; i ++) {
-            const rotations= tilePins.map(pin => {
-                const angle = (rotateCC?4-i:i)*90;
+        for (let i = 1; i < 4; i++) {
+            const rotations = tilePins.map(pin => {
+                const angle = (rotateCC ? 4 - i : i) * 90;
                 const direction = shapez.Vector.transformDirectionFromMultipleOf90(pin.direction, angle);
                 const point = shapez.enumDirectionToVector[direction].add(pin.pos);
                 const collision = pins.some(p => p.pos.x == point.x && p.pos.y == point.y);
@@ -84,7 +84,6 @@ class PinConfigurator extends shapez.BaseHUDPart {
             }
             const worldPos = this.root.camera.screenToWorld(mousePosition);
             const tile = worldPos.toTileSpace();
-            
             const building = this.getBuildingWithPins(tile);
             if (building) {
                 const localTile = building.components.StaticMapEntity.worldToLocalTile(tile);
@@ -93,6 +92,9 @@ class PinConfigurator extends shapez.BaseHUDPart {
                 const rotateCC = this.root.keyMapper.getBinding(shapez.KEYMAPPINGS.placement.rotateInverseModifier).pressed;
                 const rotations = this.getValidPinRotations(pins, tilePins, rotateCC);
                 rotations.forEach(rotation => rotation.pin.direction = rotation.direction);
+                if (rotations.length > 0) {
+                    this.root.systemMgr.systems.wire.needsRecompute = true;
+                }
             }
         }
     }
